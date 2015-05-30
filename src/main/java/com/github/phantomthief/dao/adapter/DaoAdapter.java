@@ -4,6 +4,8 @@
 package com.github.phantomthief.dao.adapter;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import com.github.phantomthief.dao.proxy.JdbcTemplateHandler;
 import com.github.phantomthief.dao.resolver.impl.DefaultContextResolver;
@@ -45,9 +47,14 @@ public class DaoAdapter {
                         new DefaultContextResolver(dataSourceProvider, shardDataSourceProvider)));*/
 
         ProxyFactory factory = new ProxyFactory();
-        factory.setInterfaces(new Class<?>[] { iface });
+        if (iface.isInterface()) {
+            factory.setInterfaces(new Class<?>[] { iface });
+        } else {
+            factory.setSuperclass(iface);
+        }
         try {
             T x = (T) factory.create(new Class[] {}, new Object[] {});
+            factory.setFilter(this::filterMethod);
             ((Proxy) x).setHandler(new JdbcTemplateHandler(new DefaultTemplateResolver(),
                     new DefaultContextResolver(dataSourceProvider, shardDataSourceProvider)));
             return x;
@@ -56,6 +63,21 @@ public class DaoAdapter {
             logger.error("Ops.", e);
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private boolean filterMethod(Method method) {
+        if (method.isDefault()) {
+            return false;
+        }
+        int modifiers = method.getModifiers();
+        if (Modifier.isAbstract(modifiers)) {
+            return true;
+        }
+        if (Modifier.isInterface(modifiers)) {
+            return true;
+        } else {
+            return false;
         }
     }
 

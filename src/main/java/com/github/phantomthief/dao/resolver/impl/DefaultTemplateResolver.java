@@ -19,10 +19,12 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.util.ClassUtils;
 
+import com.github.phantomthief.dao.annotation.ReturnId;
 import com.github.phantomthief.dao.context.SqlContext;
 import com.github.phantomthief.dao.resolver.TemplateResolver;
 import com.github.phantomthief.dao.template.Template;
 import com.github.phantomthief.dao.template.impl.CallbackBasedTemplate;
+import com.github.phantomthief.dao.template.impl.ReturnIdUpdateTemplate;
 import com.github.phantomthief.dao.template.impl.ReturnKeyTemplate;
 import com.github.phantomthief.dao.template.impl.RowBasedTemplate;
 import com.github.phantomthief.dao.template.impl.UpdateTemplate;
@@ -64,6 +66,9 @@ public class DefaultTemplateResolver implements TemplateResolver {
         }
         if (context.getKeyHolder() != null) {
             return (Template) new UpdateTemplate(context.getKeyHolder());
+        }
+        if (method.getAnnotation(ReturnId.class) != null) {
+            return (Template) new ReturnIdUpdateTemplate();
         }
 
         ResultCombiner<?> combiner = allPlugins.getPlugin(ResultCombiner.class);
